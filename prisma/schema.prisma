@@ -1,0 +1,81 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Shop {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales Sale[]
+
+  @@map("shops")
+}
+
+model Sale {
+  id                Int              @id @default(autoincrement())
+  shopId            Int
+  deliveryPartnerId Int?
+
+  saleDate DateTime @db.Date
+  quantity Decimal  @db.Decimal(10, 2)
+  amount   Decimal  @db.Decimal(12, 2)
+
+  deliveryCharge Decimal @default(0) @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop            Shop             @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  deliveryPartner DeliveryPartner? @relation(fields: [deliveryPartnerId], references: [id], onDelete: Restrict)
+
+  @@index([saleDate])
+  @@index([shopId])
+  @@index([deliveryPartnerId])
+  @@index([saleDate, shopId])
+  @@map("sales")
+}
+
+model PricingRule {
+  id        Int      @id @default(autoincrement())
+  quantity  Decimal  @unique @db.Decimal(10, 2)
+  price     Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("pricing_rules")
+}
+
+model DeliveryPartner {
+  id        Int                    @id @default(autoincrement())
+  name      String                 @unique
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  prices DeliveryPartnerPrice[]
+  sales  Sale[]
+
+  @@map("delivery_partners")
+}
+
+model DeliveryPartnerPrice {
+  id        Int             @id @default(autoincrement())
+  partnerId Int
+  quantity  Decimal         @db.Decimal(10, 2)
+  price     Decimal         @db.Decimal(10, 2)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  partner DeliveryPartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, quantity])
+  @@index([partnerId])
+  @@map("delivery_partner_prices")
+}
